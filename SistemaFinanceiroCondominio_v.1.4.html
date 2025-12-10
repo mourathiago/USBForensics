@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Financeiro Condomínio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .save-indicator {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border-color: #1e3c72;
+        }
+
+        .tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+            flex-wrap: wrap;
+        }
+
+        .export-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pdf-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .pdf-btn:hover {
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .backup-btn {
+            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        }
+
+        .backup-btn:hover {
+            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
+        }
+
+        .restore-btn {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+        }
+
+        .restore-btn:hover {
+            box-shadow: 0 5px 15px rgba(52, 73, 94, 0.3);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        }
+
+        .clear-btn:hover {
+            box-shadow: 0 5px 15px rgba(230, 126, 34, 0.3);
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .form-group h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+        }
+
+        button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3);
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            padding: 8px 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        table thead {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+
+        table th, table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #1e3c72;
+        }
+
+        .summary-card h4 {
+            color: #2c3e50;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .summary-card.receita {
+            border-left-color: #27ae60;
+        }
+
+        .summary-card.receita .value {
+            color: #27ae60;
+        }
+
+        .summary-card.despesa {
+            border-left-color: #e74c3c;
+        }
+
+        .summary-card.despesa .value {
+            color: #e74c3c;
+        }
+
+        .summary-card.saldo {
+            border-left-color: #3498db;
+        }
+
+        .summary-card.saldo .value {
+            color: #3498db;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 30px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .month-info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        .month-info strong {
+            color: #1e3c72;
+        }
+
+        .year-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .month-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .month-card:hover {
+            border-color: #1e3c72;
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.2);
+        }
+
+        .month-card h4 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .month-card-value {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .month-card-value strong {
+            color: #2c3e50;
+        }
+
+        .month-card-value.receita {
+            color: #27ae60;
+        }
+
+        .month-card-value.despesa {
+            color: #e74c3c;
+        }
+
+        .month-card-value.saldo {
+            color: #3498db;
+            font-weight: bold;
+            border-top: 2px solid #e9ecef;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .tab-buttons {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                width: 100%;
+            }
+
+            .export-buttons {
+                flex-direction: column;
+                margin-left: 0;
+                margin-top: 15px;
+            }
+
+            .export-btn {
+                width: 100%;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .year-summary {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            table th, table td {
+                padding: 10px;
+            }
+        }
+
+        .controls-wrapper {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .month-selector {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .month-selector .input-group {
+            min-width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Sistema Financeiro Condomínio</h1>
+            <p>Gerenciamento de receitas, despesas e demonstrativos mensais</p>
+            <div class="save-indicator" id="saveIndicator">✓ Salvo automaticamente</div>
+        </div>
+
+        <div class="controls">
+            <div class="controls-wrapper">
+                <div class="month-selector">
+                    <div class="input-group">
+                        <label for="monthSelect">Mês/Ano Atual:</label>
+                        <input type="month" id="monthSelect" onchange="changeMonth()">
+                    </div>
+                </div>
+                <div class="export-buttons">
+                    <button class="export-btn pdf-btn" onclick="exportPDF()">📄 Exportar PDF</button>
+                    <button class="export-btn backup-btn" onclick="backupData()">💾 Backup</button>
+                    <button class="export-btn restore-btn" onclick="restoreData()">📂 Restaurar</button>
+                    <button class="export-btn clear-btn" onclick="clearAllData()">🗑️ Limpar Tudo</button>
+                </div>
+            </div>
+
+            <div class="tab-buttons" style="margin-top: 20px;">
+                <button class="tab-btn active" onclick="showTab('condominio')">📋 Condomínio</button>
+                <button class="tab-btn" onclick="showTab('receita')">📥 Receitas</button>
+                <button class="tab-btn" onclick="showTab('despesa')">📤 Despesas</button>
+                <button class="tab-btn" onclick="showTab('banco')">🏦 Contas Bancárias</button>
+                <button class="tab-btn" onclick="showTab('atraso')">⚠️ Contas em Atraso</button>
+                <button class="tab-btn" onclick="showTab('resumo')">📊 Resumo Mensal</button>
+                <button class="tab-btn" onclick="showTab('anual')">📈 Resumo Anual</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- TAB: CONDOMÍNIO -->
+            <div id="condominio" class="tab-content active">
+                <div class="form-group">
+                    <h3>Informações do Condomínio</h3>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="condoNome">Nome do Condomínio *</label>
+                            <input type="text" id="condoNome" placeholder="Ex: Condomínio Vila Azul">
+                        </div>
+                        <div class="input-group">
+                            <label for="condoEndereco">Endereço</label>
+                            <input type="text" id="condoEndereco" placeholder="Ex: Rua das Flores, 123">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="condoEmail">Email</label>
+                            <input type="email" id="condoEmail" placeholder="Ex: contato@condominio.com">
+                        </div>
+                        <div class="input-group">
+                            <label for="condoTelefone">Telefone</label>
+                            <input type="tel" id="condoTelefone" placeholder="Ex: (11) 98765-4321">
+                        </div>
+                    </div>
+                    <button onclick="saveCondominioInfo()">💾 Salvar Informações</button>
+                </div>
+
+                <div id="condoInfoDisplay" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- TAB: RECEITAS -->
+            <div id="receita" class="tab-content">
+                <div class="month-info">
+                    <strong>Mês Selecionado:</strong> <span id="receitaMesInfo"></span>
+                </div>
+
+                <div class="form-group">
+                    <h3>Adicionar Receita</h3>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="receitaTipo">Tipo de Receita *</label>
+                            <select id="receitaTipo">
+                                <option value="">Selecione...</option>
+                                <option value="Cota Condominial">Cota Condominial</option>
+                                <option value="Multas Arrecadadas">Multas Arrecadadas</option>
+                                <option value="Cota Atrasada">Cota Atrasada</option>
+                                <option value="Antecipação">Antecipação</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="receitaValor">Valor (R$) *</label>
+                            <input type="number" id="receitaValor" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label for="receitaDia">Dia do Mês *</label>
+                            <input type="number" id="receitaDia" placeholder="1-31" min="1" max="31">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="receitaDescricao">Descrição</label>
+                            <textarea id="receitaDescricao" placeholder="Observações..." rows="2"></textarea>
+                        </div>
+                    </div>
+                    <button onclick="addReceita()">➕ Adicionar Receita</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="receitaTable">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Valor (R$)</th>
+                                <th>Descrição</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="receitaBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: DESPESAS -->
+            <div id="despesa" class="tab-content">
+                <div class="month-info">
+                    <strong>Mês Selecionado:</strong> <span id="despesaMesInfo"></span>
+                </div>
+
+                <div class="form-group">
+                    <h3>Adicionar Despesa</h3>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="despesaTipo">Tipo de Despesa *</label>
+                            <select id="despesaTipo">
+                                <option value="">Selecione...</option>
+                                <option value="Água">Água</option>
+                                <option value="Energia Elétrica">Energia Elétrica</option>
+                                <option value="Internet">Internet</option>
+                                <option value="Limpeza Condomínio">Limpeza Condomínio</option>
+                                <option value="Material de Limpeza">Material de Limpeza</option>
+                                <option value="Limpeza Esgoto">Limpeza Esgoto</option>
+                                <option value="Manutenção">Manutenção</option>
+                                <option value="Obras/Reformas">Obras/Reformas</option>
+                                <option value="Cartório">Cartório</option>
+                                <option value="Papelaria">Papelaria</option>
+                                <option value="Diverso">Diverso</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="despesaValor">Valor (R$) *</label>
+                            <input type="number" id="despesaValor" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label for="despesaDia">Dia do Mês *</label>
+                            <input type="number" id="despesaDia" placeholder="1-31" min="1" max="31">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="despesaDescricao">Descrição</label>
+                            <textarea id="despesaDescricao" placeholder="Observações..." rows="2"></textarea>
+                        </div>
+                    </div>
+                    <button onclick="addDespesa()">➕ Adicionar Despesa</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="despesaTable">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Valor (R$)</th>
+                                <th>Descrição</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="despesaBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: CONTAS BANCÁRIAS -->
+            <div id="banco" class="tab-content">
+                <div class="month-info">
+                    <strong>Mês Selecionado:</strong> <span id="bancoMesInfo"></span>
+                </div>
+
+                <div class="form-group">
+                    <h3>Saldos em Contas Bancárias</h3>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="poupanca">Poupança (R$)</label>
+                            <input type="number" id="poupanca" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label for="aplicacao">Aplicação (R$)</label>
+                            <input type="number" id="aplicacao" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label for="fundoReserva">Fundo de Reserva (R$)</label>
+                            <input type="number" id="fundoReserva" placeholder="0.00" step="0.01">
+                        </div>
+                    </div>
+                    <button onclick="saveContasBancarias()">💾 Salvar Saldos</button>
+                </div>
+
+                <div id="bancoDisplay" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- TAB: CONTAS EM ATRASO -->
+            <div id="atraso" class="tab-content">
+                <div class="form-group">
+                    <h3>Adicionar Conta em Atraso</h3>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="atrasoMorador">Nome do Morador *</label>
+                            <input type="text" id="atrasoMorador" placeholder="Ex: João Silva">
+                        </div>
+                        <div class="input-group">
+                            <label for="atrasoApartamento">Apartamento *</label>
+                            <input type="text" id="atrasoApartamento" placeholder="Ex: 101">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label for="atrasoValor">Valor em Atraso (R$) *</label>
+                            <input type="number" id="atrasoValor" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="input-group">
+                            <label for="atrasoDias">Dias em Atraso</label>
+                            <input type="number" id="atrasoDias" placeholder="0">
+                        </div>
+                    </div>
+                    <button onclick="addAtraso()">➕ Adicionar Atraso</button>
+                </div>
+
+                <div class="table-container">
+                    <table id="atrasoTable">
+                        <thead>
+                            <tr>
+                                <th>Morador</th>
+                                <th>Apartamento</th>
+                                <th>Valor (R$)</th>
+                                <th>Dias em Atraso</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="atrasoBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: RESUMO MENSAL -->
+            <div id="resumo" class="tab-content">
+                <div class="month-info">
+                    <strong>Mês Selecionado:</strong> <span id="resumoMesInfo"></span>
+                </div>
+
+                <div class="summary-cards">
+                    <div class="summary-card receita">
+                        <h4>Receita Total (Mês)</h4>
+                        <div class="value" id="totalReceita">R$ 0,00</div>
+                    </div>
+                    <div class="summary-card despesa">
+                        <h4>Despesa Total (Mês)</h4>
+                        <div class="value" id="totalDespesa">R$ 0,00</div>
+                    </div>
+                    <div class="summary-card saldo">
+                        <h4>Saldo (Mês)</h4>
+                        <div class="value" id="totalSaldo">R$ 0,00</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 20px;">📈 Evolução Diária - Receitas vs Despesas</h3>
+                    <div class="chart-container">
+                        <canvas id="linhaChart"></canvas>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 20px;">Receitas por Tipo</h3>
+                    <div class="chart-container">
+                        <canvas id="receitaChart"></canvas>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 20px;">Despesas por Categoria</h3>
+                    <div class="chart-container">
+                        <canvas id="despesaChart"></canvas>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 20px;">Contas Bancárias</h3>
+                    <div class="chart-container">
+                        <canvas id="bancoChart"></canvas>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 20px;">Contas em Atraso</h3>
+                    <div id="atrasoSummary"></div>
+                </div>
+            </div>
+
+            <!-- TAB: RESUMO ANUAL -->
+            <div id="anual" class="tab-content">
+                <div class="month-info">
+                    <strong>Resumo Anual de Todos os Meses</strong>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 20px;">📊 Lançamentos por Mês</h3>
+                    <div id="yearSummaryCards" class="year-summary"></div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 20px;">💰 Despesas vs Receitas (Colunas)</h3>
+                    <div class="chart-container">
+                        <canvas id="yearColunasChart"></canvas>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 20px;">🏦 Evolução de Saldos Bancários (Linha)</h3>
+                    <div class="chart-container">
+                        <canvas id="yearBancoLinhaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar data do mês atual
+        const today = new Date();
+        const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('monthSelect').value = currentMonth;
+
+        // Estrutura de dados
+        let dados = {
+            condominio: {
+                nome: '',
+                endereco: '',
+                email: '',
+                telefone: ''
+            },
+            receitas: [],
+            despesas: [],
+            contasBancarias: {},
+            contasAtraso: []
+        };
+
+        let mesAtual = currentMonth;
+
+        // Carregar dados do localStorage
+        function loadData() {
+            const saved = localStorage.getItem('sistemaFinanceiroCondominio');
+            if (saved) {
+                dados = JSON.parse(saved);
+                loadCondominioInfo();
+                updateMesInfo();
+                loadReceitas();
+                loadDespesas();
+                loadContasBancarias();
+                loadContasAtraso();
+                updateResumo();
+            }
+        }
+
+        // Salvar dados no localStorage
+        function saveData() {
+            localStorage.setItem('sistemaFinanceiroCondominio', JSON.stringify(dados));
+            showSaveIndicator();
+        }
+
+        // Mostrar indicador de salvamento
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Função para formatar mês
+        function formatarMes(mesStr) {
+            const [ano, mes] = mesStr.split('-');
+            const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            return meses[parseInt(mes) - 1] + ' de ' + ano;
+        }
+
+        // Atualizar informações do mês
+        function updateMesInfo() {
+            const mesFormatado = formatarMes(mesAtual);
+            document.getElementById('receitaMesInfo').textContent = mesFormatado;
+            document.getElementById('despesaMesInfo').textContent = mesFormatado;
+            document.getElementById('bancoMesInfo').textContent = mesFormatado;
+            document.getElementById('resumoMesInfo').textContent = mesFormatado;
+        }
+
+        // Mudar mês
+        function changeMonth() {
+            mesAtual = document.getElementById('monthSelect').value;
+            updateMesInfo();
+            loadReceitas();
+            loadDespesas();
+            loadContasBancarias();
+            updateResumo();
+        }
+
+        // Alternar abas
+        function showTab(tabName) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'resumo') {
+                setTimeout(() => {
+                    updateCharts();
+                }, 100);
+            } else if (tabName === 'anual') {
+                setTimeout(() => {
+                    updateAnnualCharts();
+                }, 100);
+            }
+        }
+
+        // CONDOMÍNIO
+        function saveCondominioInfo() {
+            dados.condominio = {
+                nome: document.getElementById('condoNome').value,
+                endereco: document.getElementById('condoEndereco').value,
+                email: document.getElementById('condoEmail').value,
+                telefone: document.getElementById('condoTelefone').value
+            };
+            saveData();
+            loadCondominioInfo();
+            alert('✓ Informações do condomínio salvas com sucesso!');
+        }
+
+        function loadCondominioInfo() {
+            document.getElementById('condoNome').value = dados.condominio.nome || '';
+            document.getElementById('condoEndereco').value = dados.condominio.endereco || '';
+            document.getElementById('condoEmail').value = dados.condominio.email || '';
+            document.getElementById('condoTelefone').value = dados.condominio.telefone || '';
+
+            const display = document.getElementById('condoInfoDisplay');
+            if (dados.condominio.nome) {
+                display.innerHTML = `
+                    <div class="form-group">
+                        <h3>Informações Cadastradas</h3>
+                        <p><strong>Nome:</strong> ${dados.condominio.nome}</p>
+                        <p><strong>Endereço:</strong> ${dados.condominio.endereco || 'Não informado'}</p>
+                        <p><strong>Email:</strong> ${dados.condominio.email || 'Não informado'}</p>
+                        <p><strong>Telefone:</strong> ${dados.condominio.telefone || 'Não informado'}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // RECEITAS
+        function addReceita() {
+            const tipo = document.getElementById('receitaTipo').value;
+            const valor = parseFloat(document.getElementById('receitaValor').value);
+            const dia = parseInt(document.getElementById('receitaDia').value);
+            const descricao = document.getElementById('receitaDescricao').value;
+
+            if (!tipo || !valor || valor <= 0 || !dia || dia < 1 || dia > 31) {
+                alert('⚠️ Preencha corretamente o tipo, valor e dia da receita!');
+                return;
+            }
+
+            const [ano, mes] = mesAtual.split('-');
+            const data = `${ano}-${mes}-${String(dia).padStart(2, '0')}`;
+
+            dados.receitas.push({
+                id: Date.now(),
+                tipo,
+                valor,
+                data,
+                mes: mesAtual,
+                descricao
+            });
+
+            saveData();
+            loadReceitas();
+            document.getElementById('receitaTipo').value = '';
+            document.getElementById('receitaValor').value = '';
+            document.getElementById('receitaDia').value = '';
+            document.getElementById('receitaDescricao').value = '';
+            updateResumo();
+        }
+
+        function loadReceitas() {
+            const tbody = document.getElementById('receitaBody');
+            tbody.innerHTML = '';
+
+            const receitasMes = dados.receitas.filter(r => r.mes === mesAtual).sort((a, b) => new Date(a.data) - new Date(b.data));
+
+            if (receitasMes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">Nenhuma receita registrada para este mês</td></tr>';
+                return;
+            }
+
+            receitasMes.forEach(receita => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${receita.data}</td>
+                    <td>${receita.tipo}</td>
+                    <td>R$ ${receita.valor.toFixed(2).replace('.', ',')}</td>
+                    <td>${receita.descricao}</td>
+                    <td><button class="delete-btn" onclick="deleteReceita(${receita.id})">Deletar</button></td>
+                `;
+            });
+        }
+
+        function deleteReceita(id) {
+            if (confirm('Tem certeza que deseja deletar esta receita?')) {
+                dados.receitas = dados.receitas.filter(r => r.id !== id);
+                saveData();
+                loadReceitas();
+                updateResumo();
+            }
+        }
+
+        // DESPESAS
+        function addDespesa() {
+            const tipo = document.getElementById('despesaTipo').value;
+            const valor = parseFloat(document.getElementById('despesaValor').value);
+            const dia = parseInt(document.getElementById('despesaDia').value);
+            const descricao = document.getElementById('despesaDescricao').value;
+
+            if (!tipo || !valor || valor <= 0 || !dia || dia < 1 || dia > 31) {
+                alert('⚠️ Preencha corretamente o tipo, valor e dia da despesa!');
+                return;
+            }
+
+            const [ano, mes] = mesAtual.split('-');
+            const data = `${ano}-${mes}-${String(dia).padStart(2, '0')}`;
+
+            dados.despesas.push({
+                id: Date.now(),
+                tipo,
+                valor,
+                data,
+                mes: mesAtual,
+                descricao
+            });
+
+            saveData();
+            loadDespesas();
+            document.getElementById('despesaTipo').value = '';
+            document.getElementById('despesaValor').value = '';
+            document.getElementById('despesaDia').value = '';
+            document.getElementById('despesaDescricao').value = '';
+            updateResumo();
+        }
+
+        function loadDespesas() {
+            const tbody = document.getElementById('despesaBody');
+            tbody.innerHTML = '';
+
+            const despesasMes = dados.despesas.filter(d => d.mes === mesAtual).sort((a, b) => new Date(a.data) - new Date(b.data));
+
+            if (despesasMes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">Nenhuma despesa registrada para este mês</td></tr>';
+                return;
+            }
+
+            despesasMes.forEach(despesa => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${despesa.data}</td>
+                    <td>${despesa.tipo}</td>
+                    <td>R$ ${despesa.valor.toFixed(2).replace('.', ',')}</td>
+                    <td>${despesa.descricao}</td>
+                    <td><button class="delete-btn" onclick="deleteDespesa(${despesa.id})">Deletar</button></td>
+                `;
+            });
+        }
+
+        function deleteDespesa(id) {
+            if (confirm('Tem certeza que deseja deletar esta despesa?')) {
+                dados.despesas = dados.despesas.filter(d => d.id !== id);
+                saveData();
+                loadDespesas();
+                updateResumo();
+            }
+        }
+
+        // CONTAS BANCÁRIAS
+        function saveContasBancarias() {
+            if (!dados.contasBancarias[mesAtual]) {
+                dados.contasBancarias[mesAtual] = {};
+            }
+
+            dados.contasBancarias[mesAtual] = {
+                poupanca: parseFloat(document.getElementById('poupanca').value) || 0,
+                aplicacao: parseFloat(document.getElementById('aplicacao').value) || 0,
+                fundoReserva: parseFloat(document.getElementById('fundoReserva').value) || 0
+            };
+            saveData();
+            loadContasBancarias();
+            alert('✓ Saldos bancários salvos com sucesso!');
+        }
+
+        function loadContasBancarias() {
+            const saldos = dados.contasBancarias[mesAtual] || { poupanca: 0, aplicacao: 0, fundoReserva: 0 };
+            document.getElementById('poupanca').value = saldos.poupanca || 0;
+            document.getElementById('aplicacao').value = saldos.aplicacao || 0;
+            document.getElementById('fundoReserva').value = saldos.fundoReserva || 0;
+
+            const display = document.getElementById('bancoDisplay');
+            const total = (saldos.poupanca || 0) + (saldos.aplicacao || 0) + (saldos.fundoReserva || 0);
+            display.innerHTML = `
+                <div class="summary-cards">
+                    <div class="summary-card saldo">
+                        <h4>Poupança</h4>
+                        <div class="value">R$ ${(saldos.poupanca || 0).toFixed(2).replace('.', ',')}</div>
+                    </div>
+                    <div class="summary-card saldo">
+                        <h4>Aplicação</h4>
+                        <div class="value">R$ ${(saldos.aplicacao || 0).toFixed(2).replace('.', ',')}</div>
+                    </div>
+                    <div class="summary-card saldo">
+                        <h4>Fundo de Reserva</h4>
+                        <div class="value">R$ ${(saldos.fundoReserva || 0).toFixed(2).replace('.', ',')}</div>
+                    </div>
+                    <div class="summary-card saldo">
+                        <h4>Total em Contas</h4>
+                        <div class="value">R$ ${total.toFixed(2).replace('.', ',')}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // CONTAS EM ATRASO
+        function addAtraso() {
+            const morador = document.getElementById('atrasoMorador').value;
+            const apartamento = document.getElementById('atrasoApartamento').value;
+            const valor = parseFloat(document.getElementById('atrasoValor').value);
+            const dias = parseInt(document.getElementById('atrasoDias').value) || 0;
+
+            if (!morador || !apartamento || !valor || valor <= 0) {
+                alert('⚠️ Preencha os dados obrigatórios!');
+                return;
+            }
+
+            dados.contasAtraso.push({
+                id: Date.now(),
+                morador,
+                apartamento,
+                valor,
+                dias,
+                data: new Date().toISOString().split('T')[0]
+            });
+
+            saveData();
+            loadContasAtraso();
+            document.getElementById('atrasoMorador').value = '';
+            document.getElementById('atrasoApartamento').value = '';
+            document.getElementById('atrasoValor').value = '';
+            document.getElementById('atrasoDias').value = '';
+        }
+
+        function loadContasAtraso() {
+            const tbody = document.getElementById('atrasoBody');
+            tbody.innerHTML = '';
+
+            dados.contasAtraso.forEach(atraso => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${atraso.morador}</td>
+                    <td>${atraso.apartamento}</td>
+                    <td>R$ ${atraso.valor.toFixed(2).replace('.', ',')}</td>
+                    <td>${atraso.dias} dias</td>
+                    <td><button class="delete-btn" onclick="deleteAtraso(${atraso.id})">Deletar</button></td>
+                `;
+            });
+        }
+
+        function deleteAtraso(id) {
+            if (confirm('Tem certeza que deseja deletar este registro?')) {
+                dados.contasAtraso = dados.contasAtraso.filter(a => a.id !== id);
+                saveData();
+                loadContasAtraso();
+            }
+        }
+
+        // RESUMO FINANCEIRO
+        function updateResumo() {
+            const receitasMes = dados.receitas.filter(r => r.mes === mesAtual);
+            const despesasMes = dados.despesas.filter(d => d.mes === mesAtual);
+
+            const totalReceita = receitasMes.reduce((sum, r) => sum + r.valor, 0);
+            const totalDespesa = despesasMes.reduce((sum, d) => sum + d.valor, 0);
+            const saldo = totalReceita - totalDespesa;
+
+            document.getElementById('totalReceita').textContent = `R$ ${totalReceita.toFixed(2).replace('.', ',')}`;
+            document.getElementById('totalDespesa').textContent = `R$ ${totalDespesa.toFixed(2).replace('.', ',')}`;
+            document.getElementById('totalSaldo').textContent = `R$ ${saldo.toFixed(2).replace('.', ',')}`;
+
+            const saldoElement = document.getElementById('totalSaldo');
+            if (saldo >= 0) {
+                saldoElement.parentElement.classList.remove('despesa');
+                saldoElement.parentElement.classList.add('receita');
+            } else {
+                saldoElement.parentElement.classList.remove('receita');
+                saldoElement.parentElement.classList.add('despesa');
+            }
+
+            updateAtrasoSummary();
+        }
+
+        function updateAtrasoSummary() {
+            const totalAtraso = dados.contasAtraso.reduce((sum, a) => sum + a.valor, 0);
+            const display = document.getElementById('atrasoSummary');
+
+            if (dados.contasAtraso.length === 0) {
+                display.innerHTML = '<p style="color: #27ae60; font-weight: bold;">✓ Nenhuma conta em atraso</p>';
+            } else {
+                display.innerHTML = `
+                    <div class="summary-cards">
+                        <div class="summary-card despesa">
+                            <h4>Total em Atraso</h4>
+                            <div class="value">R$ ${totalAtraso.toFixed(2).replace('.', ',')}</div>
+                        </div>
+                        <div class="summary-card despesa">
+                            <h4>Quantidade de Devedores</h4>
+                            <div class="value">${dados.contasAtraso.length}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // GRÁFICOS MENSAIS
+        let linhaChartInstance, receitaChartInstance, despesaChartInstance, bancoChartInstance;
+
+        function updateCharts() {
+            updateLinhaChart();
+            updateReceitaChart();
+            updateDespesaChart();
+            updateBancoChart();
+        }
+
+        function updateLinhaChart() {
+            const ctx = document.getElementById('linhaChart').getContext('2d');
+            const receitasMes = dados.receitas.filter(r => r.mes === mesAtual);
+            const despesasMes = dados.despesas.filter(d => d.mes === mesAtual);
+
+            const dias = Array.from({length: 31}, (_, i) => i + 1);
+            
+            const receitasAcumuladas = dias.map(dia => {
+                return receitasMes
+                    .filter(r => parseInt(r.data.split('-')[2]) <= dia)
+                    .reduce((sum, r) => sum + r.valor, 0);
+            });
+
+            const despesasAcumuladas = dias.map(dia => {
+                return despesasMes
+                    .filter(d => parseInt(d.data.split('-')[2]) <= dia)
+                    .reduce((sum, d) => sum + d.valor, 0);
+            });
+
+            if (linhaChartInstance) linhaChartInstance.destroy();
+
+            linhaChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dias.map(d => `Dia ${d}`),
+                    datasets: [
+                        {
+                            label: 'Receitas Acumuladas (R$)',
+                            data: receitasAcumuladas,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#27ae60',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Despesas Acumuladas (R$)',
+                            data: despesasAcumuladas,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#e74c3c',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateReceitaChart() {
+            const ctx = document.getElementById('receitaChart').getContext('2d');
+            const receitasMes = dados.receitas.filter(r => r.mes === mesAtual);
+            const tipos = [...new Set(receitasMes.map(r => r.tipo))];
+            const valores = tipos.map(tipo => 
+                receitasMes.filter(r => r.tipo === tipo).reduce((sum, r) => sum + r.valor, 0)
+            );
+
+            if (receitaChartInstance) receitaChartInstance.destroy();
+
+            receitaChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: tipos.length > 0 ? tipos : ['Sem dados'],
+                    datasets: [{
+                        data: valores.length > 0 ? valores : [1],
+                        backgroundColor: [
+                            '#27ae60', '#3498db', '#f39c12', '#e74c3c',
+                            '#9b59b6', '#1abc9c', '#34495e', '#e67e22'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDespesaChart() {
+            const ctx = document.getElementById('despesaChart').getContext('2d');
+            const despesasMes = dados.despesas.filter(d => d.mes === mesAtual);
+            const tipos = [...new Set(despesasMes.map(d => d.tipo))];
+            const valores = tipos.map(tipo => 
+                despesasMes.filter(d => d.tipo === tipo).reduce((sum, d) => sum + d.valor, 0)
+            );
+
+            if (despesaChartInstance) despesaChartInstance.destroy();
+
+            despesaChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: tipos.length > 0 ? tipos : ['Sem dados'],
+                    datasets: [{
+                        label: 'Despesas (R$)',
+                        data: valores.length > 0 ? valores : [0],
+                        backgroundColor: '#e74c3c'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateBancoChart() {
+            const ctx = document.getElementById('bancoChart').getContext('2d');
+            const saldos = dados.contasBancarias[mesAtual] || { poupanca: 0, aplicacao: 0, fundoReserva: 0 };
+
+            if (bancoChartInstance) bancoChartInstance.destroy();
+
+            bancoChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Poupança', 'Aplicação', 'Fundo de Reserva'],
+                    datasets: [{
+                        label: 'Saldo (R$)',
+                        data: [
+                            saldos.poupanca || 0,
+                            saldos.aplicacao || 0,
+                            saldos.fundoReserva || 0
+                        ],
+                        backgroundColor: ['#3498db', '#27ae60', '#f39c12']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // RESUMO ANUAL
+        function updateAnnualCharts() {
+            updateYearSummaryCards();
+            updateYearColunasChart();
+            updateYearBancoLinhaChart();
+        }
+
+        function updateYearSummaryCards() {
+            const meses = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+            const ano = new Date().getFullYear();
+            const container = document.getElementById('yearSummaryCards');
+            container.innerHTML = '';
+
+            meses.forEach(mes => {
+                const mesStr = `${ano}-${mes}`;
+                const receitasMes = dados.receitas.filter(r => r.mes === mesStr);
+                const despesasMes = dados.despesas.filter(d => d.mes === mesStr);
+                
+                const totalReceita = receitasMes.reduce((sum, r) => sum + r.valor, 0);
+                const totalDespesa = despesasMes.reduce((sum, d) => sum + d.valor, 0);
+                const saldo = totalReceita - totalDespesa;
+
+                const mesFormatado = formatarMes(mesStr);
+
+                const card = document.createElement('div');
+                card.className = 'month-card';
+                card.innerHTML = `
+                    <h4>${mesFormatado}</h4>
+                    <div class="month-card-value receita">
+                        <span>Receita:</span>
+                        <strong>R$ ${totalReceita.toFixed(2).replace('.', ',')}</strong>
+                    </div>
+                    <div class="month-card-value despesa">
+                        <span>Despesa:</span>
+                        <strong>R$ ${totalDespesa.toFixed(2).replace('.', ',')}</strong>
+                    </div>
+                    <div class="month-card-value saldo">
+                        <span>Saldo:</span>
+                        <strong>R$ ${saldo.toFixed(2).replace('.', ',')}</strong>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        let yearColunasChartInstance, yearBancoLinhaChartInstance;
+
+        function updateYearColunasChart() {
+            const ctx = document.getElementById('yearColunasChart').getContext('2d');
+            const meses = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+            const ano = new Date().getFullYear();
+            const mesesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+            const receitas = meses.map(mes => {
+                const mesStr = `${ano}-${mes}`;
+                return dados.receitas.filter(r => r.mes === mesStr).reduce((sum, r) => sum + r.valor, 0);
+            });
+
+            const despesas = meses.map(mes => {
+                const mesStr = `${ano}-${mes}`;
+                return dados.despesas.filter(d => d.mes === mesStr).reduce((sum, d) => sum + d.valor, 0);
+            });
+
+            if (yearColunasChartInstance) yearColunasChartInstance.destroy();
+
+            yearColunasChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: mesesNomes,
+                    datasets: [
+                        {
+                            label: 'Receitas (R$)',
+                            data: receitas,
+                            backgroundColor: '#27ae60'
+                        },
+                        {
+                            label: 'Despesas (R$)',
+                            data: despesas,
+                            backgroundColor: '#e74c3c'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateYearBancoLinhaChart() {
+            const ctx = document.getElementById('yearBancoLinhaChart').getContext('2d');
+            const meses = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+            const ano = new Date().getFullYear();
+            const mesesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+            const poupancas = meses.map(mes => {
+                const mesStr = `${ano}-${mes}`;
+                const saldos = dados.contasBancarias[mesStr] || { poupanca: 0 };
+                return saldos.poupanca || 0;
+            });
+
+            const aplicacoes = meses.map(mes => {
+                const mesStr = `${ano}-${mes}`;
+                const saldos = dados.contasBancarias[mesStr] || { aplicacao: 0 };
+                return saldos.aplicacao || 0;
+            });
+
+            const fundos = meses.map(mes => {
+                const mesStr = `${ano}-${mes}`;
+                const saldos = dados.contasBancarias[mesStr] || { fundoReserva: 0 };
+                return saldos.fundoReserva || 0;
+            });
+
+            if (yearBancoLinhaChartInstance) yearBancoLinhaChartInstance.destroy();
+
+            yearBancoLinhaChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: mesesNomes,
+                    datasets: [
+                        {
+                            label: 'Poupança (R$)',
+                            data: poupancas,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#3498db',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Aplicação (R$)',
+                            data: aplicacoes,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#27ae60',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Fundo de Reserva (R$)',
+                            data: fundos,
+                            borderColor: '#f39c12',
+                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#f39c12',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // EXPORTAR PDF
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            let yPosition = 20;
+
+            const receitasMes = dados.receitas.filter(r => r.mes === mesAtual).sort((a, b) => new Date(a.data) - new Date(b.data));
+            const despesasMes = dados.despesas.filter(d => d.mes === mesAtual).sort((a, b) => new Date(a.data) - new Date(b.data));
+            const totalReceita = receitasMes.reduce((sum, r) => sum + r.valor, 0);
+            const totalDespesa = despesasMes.reduce((sum, d) => sum + d.valor, 0);
+            const saldo = totalReceita - totalDespesa;
+            const saldos = dados.contasBancarias[mesAtual] || { poupanca: 0, aplicacao: 0, fundoReserva: 0 };
+
+            // Cabeçalho
+            doc.setFontSize(18);
+            doc.text('DEMONSTRATIVO FINANCEIRO', pageWidth / 2, yPosition, { align: 'center' });
+            yPosition += 10;
+
+            doc.setFontSize(12);
+            doc.text(`Condomínio: ${dados.condominio.nome || 'Não informado'}`, 20, yPosition);
+            yPosition += 7;
+            doc.text(`Endereço: ${dados.condominio.endereco || 'Não informado'}`, 20, yPosition);
+            yPosition += 7;
+            doc.text(`Período: ${formatarMes(mesAtual)}`, 20, yPosition);
+            yPosition += 15;
+
+            // Resumo
+            doc.setFontSize(11);
+            doc.setTextColor(39, 174, 96);
+            doc.text(`RECEITA TOTAL: R$ ${totalReceita.toFixed(2)}`, 20, yPosition);
+            yPosition += 7;
+
+            doc.setTextColor(231, 76, 60);
+            doc.text(`DESPESA TOTAL: R$ ${totalDespesa.toFixed(2)}`, 20, yPosition);
+            yPosition += 7;
+
+            doc.setTextColor(30, 60, 114);
+            doc.text(`SALDO: R$ ${saldo.toFixed(2)}`, 20, yPosition);
+            yPosition += 15;
+
+            // Receitas
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text('RECEITAS DO MÊS:', 20, yPosition);
+            yPosition += 7;
+
+            doc.setFontSize(10);
+            receitasMes.forEach(receita => {
+                if (yPosition > pageHeight - 20) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                doc.text(`${receita.data} - ${receita.tipo}: R$ ${receita.valor.toFixed(2)}`, 25, yPosition);
+                if (receita.descricao) {
+                    yPosition += 5;
+                    doc.text(`Obs: ${receita.descricao}`, 30, yPosition);
+                }
+                yPosition += 5;
+            });
+
+            yPosition += 5;
+
+            // Despesas
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text('DESPESAS DO MÊS:', 20, yPosition);
+            yPosition += 7;
+
+            doc.setFontSize(10);
+            despesasMes.forEach(despesa => {
+                if (yPosition > pageHeight - 20) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                doc.text(`${despesa.data} - ${despesa.tipo}: R$ ${despesa.valor.toFixed(2)}`, 25, yPosition);
+                if (despesa.descricao) {
+                    yPosition += 5;
+                    doc.text(`Obs: ${despesa.descricao}`, 30, yPosition);
+                }
+                yPosition += 5;
+            });
+
+            yPosition += 10;
+
+            // Contas Bancárias
+            if (yPosition > pageHeight - 40) {
+                doc.addPage();
+                yPosition = 20;
+            }
+
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text('CONTAS BANCÁRIAS:', 20, yPosition);
+            yPosition += 7;
+
+            doc.setFontSize(10);
+            doc.text(`Poupança: R$ ${(saldos.poupanca || 0).toFixed(2)}`, 25, yPosition);
+            yPosition += 5;
+            doc.text(`Aplicação: R$ ${(saldos.aplicacao || 0).toFixed(2)}`, 25, yPosition);
+            yPosition += 5;
+            doc.text(`Fundo de Reserva: R$ ${(saldos.fundoReserva || 0).toFixed(2)}`, 25, yPosition);
+            yPosition += 5;
+            const totalBancos = (saldos.poupanca || 0) + (saldos.aplicacao || 0) + (saldos.fundoReserva || 0);
+            doc.setTextColor(30, 60, 114);
+            doc.text(`TOTAL EM CONTAS: R$ ${totalBancos.toFixed(2)}`, 25, yPosition);
+
+            // Salvar
+            const mesFormatado = formatarMes(mesAtual).replace(' ', '_').replace('de_', '');
+            doc.save(`Demonstrativo_${dados.condominio.nome || 'Condominio'}_${mesFormatado}.pdf`);
+            alert('✓ PDF exportado com sucesso!');
+        }
+
+        // BACKUP E RESTORE
+        function backupData() {
+            const dataStr = JSON.stringify(dados, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `backup_condominio_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            alert('✓ Backup realizado com sucesso!');
+        }
+
+        function restoreData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        dados = JSON.parse(event.target.result);
+                        localStorage.setItem('sistemaFinanceiroCondominio', JSON.stringify(dados));
+                        loadData();
+                        alert('✓ Dados restaurados com sucesso!');
+                    } catch (error) {
+                        alert('❌ Erro ao restaurar dados. Arquivo inválido.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ ATENÇÃO: Isto vai deletar TODOS os dados! Tem certeza?')) {
+                if (confirm('Confirme novamente para deletar tudo:')) {
+                    dados = {
+                        condominio: { nome: '', endereco: '', email: '', telefone: '' },
+                        receitas: [],
+                        despesas: [],
+                        contasBancarias: {},
+                        contasAtraso: []
+                    };
+                    localStorage.removeItem('sistemaFinanceiroCondominio');
+                    location.reload();
+                }
+            }
+        }
+
+        // Inicializar
+        loadData();
+    </script>
+</body>
+</html>
